@@ -1,0 +1,20 @@
+var a = 67;
+var b = 3;
+
+// -------------- Testing --------------
+print a;
+print b;
+print a + b; // 70
+print a + b * 2; // 73
+print (a + b) * 2; // 140
+
+// -------------- Edge cases --------------
+var c = "global"; //global variable
+{
+  var c = c + " or local"; //is this local or global?
+  print c;
+}
+
+var noDecimal = 593. //No number(s) after the decimal point
+
+ var age = "20"; //no semi-colon at EOF
