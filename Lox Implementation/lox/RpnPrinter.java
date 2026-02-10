@@ -1,0 +1,60 @@
+package com.craftinginterpreters.lox;
+
+/*
+Main differences between RPN and current "Pretty Printing" format:
+- No parantheses
+- Postfix operators instead of infix
+
+Changes:
+-Remove grouping & parantheses
+-Return left right operator
+ */
+
+class RpnPrinter implements Expr.Visitor<String> {
+    String print(Expr expr) {
+        return expr.accept(this);
+    }
+
+    @Override
+    // "LEFT RIGHT OP" INSTEAD OF "( LEFT OP RIGHT )"
+    public String visitBinaryExpr(Expr.Binary expr) {
+        return expr.left.accept(this) + " " +
+                expr.right.accept(this) + " " +
+                expr.operator.lexeme;
+    }
+
+    @Override
+    public String visitGroupingExpr(Expr.Grouping expr) {
+        // No paranthesize; just return expresssion
+        return expr.expression.accept(this);
+    }
+
+    @Override
+    public String visitLiteralExpr(Expr.Literal expr) {
+        if (expr.value == null) return "nil";
+        return expr.value.toString();
+    }
+
+    @Override
+    public String visitUnaryExpr(Expr.Unary expr) {
+        String operator = expr.operator.lexeme;
+        if (expr.operator.type == TokenType.MINUS) {
+            // Can't use same symbol for unary and binary.
+            operator = "~";
+        }
+
+        return expr.right.accept(this) + " " + operator;
+    }
+
+    public static void main(String[] args) {
+        Expr expression = new Expr.Binary(
+                new Expr.Unary(
+                        new Token(TokenType.MINUS, "-", null, 1),
+                        new Expr.Literal(123)),
+                new Token(TokenType.STAR, "*", null, 1),
+                new Expr.Grouping(
+                        new Expr.Literal("str")));
+
+        System.out.println(new RpnPrinter().print(expression));
+    }
+}
