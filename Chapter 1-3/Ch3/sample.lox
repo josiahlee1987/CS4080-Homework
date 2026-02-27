@@ -17,4 +17,4 @@ var c = "global"; //global variable
 
 var noDecimal = 593. //No number(s) after the decimal point
 
- var age = "20"; //no semi-colon at EOF
+var age = "20" //no semi-colon at EOF
