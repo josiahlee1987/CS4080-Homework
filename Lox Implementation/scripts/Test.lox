@@ -1,0 +1,46 @@
+class Engine {
+  status() {
+    print "Engine is off.";
+  }
+}
+
+class TurboEngine < Engine {
+  status() {
+    super.status();
+    print "Turbo is primed.";
+  }
+}
+
+class Car {
+  init(name, engine) {
+    this.name = name;
+    this.engine = engine;
+  }
+
+  testDrive() {
+    print "Testing: " + this.name;
+    this.engine.status();
+
+    for (var i = 1; i <= 3; i = i + 1) {
+      print "Lap " + i;
+
+      var speed = 0;
+      while (true) {
+        speed = speed + 10;
+        if (speed == 30) {
+          print "  Reached cruising speed: 30mph";
+          break; // This should only exit the 'while' loop
+        }
+      }
+
+      if (i == 2) {
+        print "  Pit stop on lap 2!";
+        // The for loop continues after the 'while' break
+      }
+    }
+    print "Test drive complete.";
+  }
+}
+
+var myCar = Car("LoxMobile", TurboEngine());
+myCar.testDrive();

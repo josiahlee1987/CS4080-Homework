@@ -1,0 +1,10 @@
+var list = List();
+list.add("first");
+list.add("second");
+
+print list.contains("first"); // true
+print list.removeAt(0); // "first"
+print list.size(); // 1
+
+list.clear();
+print list.size(); // 0
