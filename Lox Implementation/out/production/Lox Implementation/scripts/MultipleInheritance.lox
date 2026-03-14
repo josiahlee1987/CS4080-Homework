@@ -1,0 +1,22 @@
+class ParentA {
+  greet() { print "Hello from A"; }
+}
+
+class ParentB {
+  greet() { print "Hello from B"; }
+  dance() { print "Dancing B style"; }
+}
+
+// Inherits from both; greet() should come from A (first in list)
+class Child < ParentA, ParentB {
+  test() {
+    super.greet();
+    super.dance();
+  }
+}
+
+var c = Child();
+c.test();
+// Expected Output:
+// Hello from A
+// Dancing B style
