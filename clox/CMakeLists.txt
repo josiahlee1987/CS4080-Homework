@@ -19,4 +19,6 @@ add_executable(clox ${SOURCES} ${HEADERS}
         compiler.c
         scanner.h
         scanner.c
+        object.h
+        object.c
 )
