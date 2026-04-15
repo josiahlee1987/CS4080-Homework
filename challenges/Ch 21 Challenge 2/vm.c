@@ -31,12 +31,18 @@ static void runtimeError(const char* format, ...) {
 void initVM() {
     resetStack(); // We don’t even need to clear the unused cells in the array—we simply won’t access them until after values have been stored in them
     vm.objects = NULL;
-    initTable(&vm.globals);
+
+    initTable(&vm.globalNames); // vm.globals -> vm.globalNames
+    initValueArray(&vm.globalValues);
+
     initTable(&vm.strings);
 }
 
 void freeVM() {
-    freeTable(&vm.globals);
+
+    freeTable(&vm.globalNames); // vm.globals -> vm.globalNames
+    freeValueArray(&vm.globalValues);
+
     freeTable(&vm.strings);
 }
 
@@ -114,30 +120,31 @@ push(valueType(a op b)); \
             case OP_TRUE: push(BOOL_VAL(true)); break;
             case OP_FALSE: push(BOOL_VAL(false)); break;
             case OP_POP: pop(); break;
+
+            // push/pop from value array instead of from old hash table
             case OP_GET_GLOBAL: {
-                    ObjString* name = READ_STRING();
-                    Value value;
-                    if (!tableGet(&vm.globals, name, &value)) {
-                        runtimeError("Undefined variable '%s'.", name->chars);
+                    Value value = vm.globalValues.values[READ_BYTE()];
+                    if (IS_UNDEFINED(value)) {
+                        runtimeError("Undefined variable.");
                         return INTERPRET_RUNTIME_ERROR;
                     }
                     push(value);
                     break;
             }
+
             case OP_DEFINE_GLOBAL: {
-                    ObjString* name = READ_STRING();
-                    tableSet(&vm.globals, name, peek(0));
-                    pop();
+                    vm.globalValues.values[READ_BYTE()] = pop();
                     break;
             }
+
             case OP_SET_GLOBAL: {
-                        ObjString* name = READ_STRING();
-                        if (tableSet(&vm.globals, name, peek(0))) {
-                            tableDelete(&vm.globals, name);
-                            runtimeError("Undefined variable '%s'.", name->chars);
-                            return INTERPRET_RUNTIME_ERROR;
-                        }
-                        break;
+                    uint8_t index = READ_BYTE();
+                    if (IS_UNDEFINED(vm.globalValues.values[index])) {
+                        runtimeError("Undefined variable.");
+                        return INTERPRET_RUNTIME_ERROR;
+                    }
+                    vm.globalValues.values[index] = peek(0);
+                    break;
             }
             case OP_EQUAL: {
                     Value b = pop();

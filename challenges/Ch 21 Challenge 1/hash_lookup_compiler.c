@@ -4,6 +4,7 @@
 #include "common.h"
 #include "compiler.h"
 #include "scanner.h"
+#include "table.h" // <- hash table for fast variable name lookup
 
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
@@ -37,6 +38,8 @@ typedef struct {
     ParseFn infix;
     Precedence precedence;
 } ParseRule;
+
+Table stringConstants;
 
 Parser parser;
 
@@ -145,8 +148,13 @@ static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
 static uint8_t identifierConstant(Token* name) {
-    return makeConstant(OBJ_VAL(copyString(name->start,
-                                           name->length)));
+    ObjString* string = copyString(name->start, name->length); // copy constant name
+    Value indexValue; // index variable is stored in
+    if (tableGet(&stringConstants, string, &indexValue)) return (uint8_t)AS_NUMBER(indexValue);
+
+    uint8_t index = makeConstant(OBJ_VAL(string));
+    tableSet(&stringConstants, string, NUMBER_VAL((double)index));
+    return index;
 }
 
 static uint8_t parseVariable(const char* errorMessage) {
@@ -378,6 +386,7 @@ bool compile(const char* source, Chunk* chunk) {
 
     parser.hadError = false;
     parser.panicMode = false;
+    initTable(&stringConstants); // <-
 
     advance();
 
@@ -385,5 +394,6 @@ bool compile(const char* source, Chunk* chunk) {
         declaration();
     }
     endCompiler();
+    freeTable(&stringConstants); // <-
     return !parser.hadError;
 }

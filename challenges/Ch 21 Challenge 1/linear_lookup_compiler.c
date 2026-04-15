@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "common.h"
 #include "compiler.h"
@@ -145,8 +146,19 @@ static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
 static uint8_t identifierConstant(Token* name) {
-    return makeConstant(OBJ_VAL(copyString(name->start,
-                                           name->length)));
+    for (int i = 0; i < currentChunk()->constants.count; i++) {
+        Value existing = currentChunk()->constants.values[i];
+        if (!IS_STRING(existing)) continue;
+
+        ObjString* existingVar = AS_STRING(existing);
+
+        if (existingVar->length == name->length &&
+            memcmp(existingVar->chars, name->start, name->length) == 0) { // if same string ( length & chars)
+            return (uint8_t)i; // return index value (existing variable name)
+            }
+    }
+
+    return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
 }
 
 static uint8_t parseVariable(const char* errorMessage) {

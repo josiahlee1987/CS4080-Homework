@@ -144,9 +144,19 @@ static void declaration();
 static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
+// Similar hash lookup for variable names as previous challenge
 static uint8_t identifierConstant(Token* name) {
-    return makeConstant(OBJ_VAL(copyString(name->start,
-                                           name->length)));
+    Value index;
+    ObjString* identifier = copyString(name->start, name->length);
+    if (tableGet(&vm.globalNames, identifier, &index)) {
+        return (uint8_t)AS_NUMBER(index);
+    }
+
+    uint8_t newIndex = (uint8_t)vm.globalValues.count;
+    writeValueArray(&vm.globalValues, UNDEFINED_VAL); // write values to array
+
+    tableSet(&vm.globalNames, identifier, NUMBER_VAL((double)newIndex));
+    return newIndex;
 }
 
 static uint8_t parseVariable(const char* errorMessage) {

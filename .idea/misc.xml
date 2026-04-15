@@ -6,4 +6,11 @@
   <component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$/clox">
     <contentRoot DIR="$PROJECT_DIR$" />
   </component>
+  <component name="CidrRootsConfiguration">
+    <sourceRoots>
+      <file path="$PROJECT_DIR$" />
+      <file path="$PROJECT_DIR$/challenges/Ch 20 Challenge 3" />
+      <file path="$PROJECT_DIR$/clox" />
+    </sourceRoots>
+  </component>
 </project>
