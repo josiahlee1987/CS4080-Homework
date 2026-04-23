@@ -12,6 +12,8 @@ typedef enum {
     TOKEN_EQUAL, TOKEN_EQUAL_EQUAL,
     TOKEN_GREATER, TOKEN_GREATER_EQUAL,
     TOKEN_LESS, TOKEN_LESS_EQUAL,
+    TOKEN_COLON, // <- Switch statement case ":"
+
     // Literals.
     TOKEN_IDENTIFIER, TOKEN_STRING, TOKEN_NUMBER,
     // Keywords.
@@ -19,7 +21,7 @@ typedef enum {
     TOKEN_FOR, TOKEN_FUN, TOKEN_IF, TOKEN_NIL, TOKEN_OR,
     TOKEN_PRINT, TOKEN_RETURN, TOKEN_SUPER, TOKEN_THIS,
     TOKEN_TRUE, TOKEN_VAR, TOKEN_WHILE,
-    TOKEN_CONTINUE, // <- Continue keyword for loops
+    TOKEN_CASE, TOKEN_DEFAULT, TOKEN_SWITCH, // <- Switch statement keywords
 
     TOKEN_ERROR, TOKEN_EOF
   } TokenType;

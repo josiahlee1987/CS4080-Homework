@@ -6,6 +6,7 @@
 
 typedef enum {
     OP_CONSTANT,
+    OP_DUP, // <- Instruction to push copy of the switch value; needed to repeatedly compare it to each case
     OP_NIL,
     OP_TRUE,
     OP_FALSE,

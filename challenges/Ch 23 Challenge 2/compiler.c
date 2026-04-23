@@ -505,7 +505,7 @@ static void continueStatement() {
         emitByte(OP_POP);
          }
 
-    // Jump to top of current innermost loop.
+    // Jump to top of current innermost loop
     emitLoop(innermostLoopStart);
 }
 
@@ -520,10 +520,13 @@ static void forStatement() { // Keep track of scope + restore previous values fo
         expressionStatement();
     }
 
-    int surroundingLoopStart = innermostLoopStart; // <--
-    int surroundingLoopScopeDepth = innermostLoopScopeDepth; // <--
-    innermostLoopStart = currentChunk()->count; // <--
-    innermostLoopScopeDepth = current->scopeDepth; // <--
+    // store outer loop
+    int surroundingLoopStart = innermostLoopStart;
+    int surroundingLoopScopeDepth = innermostLoopScopeDepth;
+
+    // set current inner loop
+    innermostLoopStart = currentChunk()->count;
+    innermostLoopScopeDepth = current->scopeDepth;
 
     // int loopStart = currentChunk()->count;
     int exitJump = -1;
@@ -546,7 +549,7 @@ static void forStatement() { // Keep track of scope + restore previous values fo
         consume(TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
 
         emitLoop(innermostLoopStart); // loopStart becomes innermostLoopStart
-        innermostLoopStart = incrementStart; // <--
+        innermostLoopStart = incrementStart; // <-
         patchJump(bodyJump);
     }
 
@@ -559,8 +562,9 @@ static void forStatement() { // Keep track of scope + restore previous values fo
         emitByte(OP_POP); // Condition.
     }
 
-    innermostLoopStart = surroundingLoopStart; // <--
-    innermostLoopScopeDepth = surroundingLoopScopeDepth; // <--
+    // restore outer loop
+    innermostLoopStart = surroundingLoopStart;
+    innermostLoopScopeDepth = surroundingLoopScopeDepth;
 
     endScope();
 }
@@ -617,6 +621,7 @@ static void synchronize() {
         case TOKEN_IF:
         case TOKEN_WHILE:
         case TOKEN_PRINT:
+        case TOKEN_CONTINUE: // <-
         case TOKEN_RETURN:
             return;
 
