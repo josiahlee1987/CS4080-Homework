@@ -111,7 +111,8 @@ static void advance() {
 }
 
 static void consume(TokenType type, const char* message) {
-    if (parser.current.type == type) {
+    if (parser.current.type == type)
+    {
         advance();
         return;
     }
@@ -213,7 +214,7 @@ static ObjFunction* endCompiler() {
 #ifdef DEBUG_PRINT_CODE
     if (!parser.hadError) {
         disassembleChunk(currentChunk(), function->name != NULL
-            ? function->name->chars : "<script>");
+    ? function->name->chars : "<script>");
     }
 #endif
     current = current->enclosing;
@@ -244,6 +245,18 @@ static void statement();
 static void declaration();
 static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
+
+static void addLocal(Token name) {
+    if (current->localCount == UINT8_COUNT) {
+        error("Too many local variables in function.");
+        return;
+    }
+
+    Local* local = &current->locals[current->localCount++];
+    local->name = name;
+    local->depth = -1;
+    local->isCaptured = false;
+}
 
 static uint8_t identifierConstant(Token* name) {
     return makeConstant(OBJ_VAL(copyString(name->start,
@@ -305,18 +318,6 @@ static int resolveUpvalue(Compiler* compiler, Token* name) {
     }
 
     return -1;
-}
-
-static void addLocal(Token name) {
-    if (current->localCount == UINT8_COUNT) {
-        error("Too many local variables in function.");
-        return;
-    }
-
-    Local* local = &current->locals[current->localCount++];
-    local->name = name;
-    local->depth = -1;
-    local->isCaptured = false;
 }
 
 static void declareVariable() {
@@ -588,11 +589,19 @@ static void function(FunctionType type) {
     block();
 
     ObjFunction* function = endCompiler();
-    emitBytes(OP_CLOSURE, makeConstant(OBJ_VAL(function)));
 
-    for (int i = 0; i < function->upvalueCount; i++) {
-        emitByte(compiler.upvalues[i].isLocal ? 1 : 0);
-        emitByte(compiler.upvalues[i].index);
+    uint8_t functionConstant = makeConstant(OBJ_VAL(function));
+    if (function->upvalueCount > 0) {
+        emitBytes(OP_CLOSURE, functionConstant);
+
+        // Emit arguments for each upvalue to know whether to capture a local or an upvalue
+        for (int i = 0; i < function->upvalueCount; i++) {
+            emitByte(compiler.upvalues[i].isLocal ? 1 : 0);
+            emitByte(compiler.upvalues[i].index);
+        }
+    } else {
+        // No need to create a closure
+        emitBytes(OP_CONSTANT, functionConstant);
     }
 }
 

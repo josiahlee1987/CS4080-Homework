@@ -1,0 +1,31 @@
+// Callback pattern
+
+// Constructor
+fun vector(x, y) {
+  fun object(callback) {
+    return callback(x, y); // Feeds the "trapped" upvalues back into function
+  }
+  return object;
+}
+
+// Method: Add 2 vectors
+fun add(vec1, vec2) {
+  fun onVec1(x1, y1) {
+    fun onVec2(x2, y2) {
+      return vector(x1 + x2, y1 + y2);
+    }
+    return vec2(onVec2);
+  }
+  return vec1(onVec1);
+}
+
+var a = vector(1, 2);
+var b = vector(3, 4);
+var c = add(a, b);
+
+fun printCoords(x, y) {
+  print x;
+  print y;
+}
+
+c(printCoords);
