@@ -3,42 +3,64 @@
 
 #include "common.h"
 #include "chunk.h"
-#include "table.h"
 #include "value.h"
 
-#define OBJ_TYPE(value)        (AS_OBJ(value)->type)
+// #define OBJ_TYPE(value)        (AS_OBJ(value)->type)
+#define OBJ_TYPE(value)        (objType(AS_OBJ(value)))
 
-#define IS_CLASS(value)        isObjType(value, OBJ_CLASS)
 #define IS_CLOSURE(value)      isObjType(value, OBJ_CLOSURE)
 #define IS_FUNCTION(value)     isObjType(value, OBJ_FUNCTION)
-#define IS_INSTANCE(value)     isObjType(value, OBJ_INSTANCE)
 #define IS_NATIVE(value)       isObjType(value, OBJ_NATIVE)
 #define IS_STRING(value)       isObjType(value, OBJ_STRING)
 
-#define AS_CLASS(value)        ((ObjClass*)AS_OBJ(value))
 #define AS_CLOSURE(value)      ((ObjClosure*)AS_OBJ(value))
 #define AS_FUNCTION(value)     ((ObjFunction*)AS_OBJ(value))
-#define AS_INSTANCE(value)     ((ObjInstance*)AS_OBJ(value))
 #define AS_NATIVE(value) \
     (((ObjNative*)AS_OBJ(value))->function)
 #define AS_STRING(value)       ((ObjString*)AS_OBJ(value))
 #define AS_CSTRING(value)      (((ObjString*)AS_OBJ(value))->chars)
 
 typedef enum {
-    OBJ_CLASS,
     OBJ_CLOSURE,
     OBJ_FUNCTION,
-    OBJ_INSTANCE,
     OBJ_NATIVE,
     OBJ_STRING,
     OBJ_UPVALUE
   } ObjType;
 
+// struct Obj {
+//     ObjType type;
+//     bool isMarked;
+//     struct Obj* next;
+// };
+
+
 struct Obj {
-    ObjType type;
-    bool isMarked;
-    struct Obj* next;
+    uint64_t header;
 };
+
+/*
+ * Memory Layout of the 64-bit Object Header:
+ * [ 8 bits: ObjType ] [ 8 bits: isMarked flag ] [ 48 bits: Next Object Pointer ]
+ * [ Bits 63 .... 56 ] [ Bits 55 .......... 48 ] [ Bits 47 .................. 0 ]
+ */
+static inline ObjType objType(Obj* object) {
+    return (ObjType)((object->header >> 56) & 0xff);
+}
+static inline bool isMarked(Obj* object) {
+    return (bool)((object->header >> 48) & 0x01);
+}
+static inline Obj* objNext(Obj* object) {
+    return (Obj*)(object->header & 0x0000ffffffffffff);
+}
+static inline void setIsMarked(Obj* object, bool isMarked) {
+    object->header = (object->header & 0xff00ffffffffffff) |
+        ((uint64_t)isMarked << 48);
+}
+static inline void setObjNext(Obj* object, Obj* next) {
+    object->header = (object->header & 0xffff000000000000) |
+        (uint64_t)next;
+}
 
 typedef struct {
     Obj obj;
@@ -76,21 +98,8 @@ typedef struct {
     int upvalueCount;
 } ObjClosure;
 
-typedef struct {
-    Obj obj;
-    ObjString* name;
-} ObjClass;
-
-typedef struct {
-    Obj obj;
-    ObjClass* klass;
-    Table fields;
-} ObjInstance;
-
-ObjClass* newClass(ObjString* name);
 ObjClosure* newClosure(ObjFunction* function);
 ObjFunction* newFunction();
-ObjInstance* newInstance(ObjClass* klass);
 ObjNative* newNative(NativeFn function);
 ObjString* takeString(char* chars, int length);
 
@@ -99,7 +108,8 @@ ObjUpvalue* newUpvalue(Value* slot);
 void printObject(Value value);
 
 static inline bool isObjType(Value value, ObjType type) {
-    return IS_OBJ(value) && AS_OBJ(value)->type == type;
+    // return IS_OBJ(value) && AS_OBJ(value)->type == type;
+    return IS_OBJ(value) && objType(AS_OBJ(value)) == type;
 }
 
 

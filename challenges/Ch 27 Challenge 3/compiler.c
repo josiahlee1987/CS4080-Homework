@@ -423,6 +423,22 @@ static void dot(bool canAssign) {
     }
 }
 
+// DELETE PROPERTY
+static void delete_(bool canAssign) {
+    // Parse receiver expression (the object)
+    parsePrecedence(PREC_CALL);
+
+    // Require a '.' after the object
+    consume(TOKEN_DOT, "Expect '.' after object.");
+
+    // Consume property name
+    consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
+    uint8_t name = identifierConstant(&parser.previous);
+
+    // Emit new delete instruction
+    emitBytes(OP_DELETE_PROPERTY, name);
+}
+
 static void literal(bool canAssign) {
     switch (parser.previous.type) {
     case TOKEN_FALSE: emitByte(OP_FALSE); break;
@@ -502,10 +518,11 @@ static void unary(bool canAssign) {
 ParseRule rules[] = {
     [TOKEN_LEFT_PAREN]    = {grouping, call,   PREC_CALL},
     [TOKEN_RIGHT_PAREN]   = {NULL,     NULL,   PREC_NONE},
-    [TOKEN_LEFT_BRACE]  = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_LEFT_BRACE]    = {NULL,     NULL,   PREC_NONE},
     [TOKEN_RIGHT_BRACE]   = {NULL,     NULL,   PREC_NONE},
     [TOKEN_COMMA]         = {NULL,     NULL,   PREC_NONE},
     [TOKEN_DOT]           = {NULL,     dot,    PREC_CALL},
+    [TOKEN_DELETE]        = {delete_,    NULL,   PREC_NONE}, // <-
     [TOKEN_MINUS]         = {unary,    binary, PREC_TERM},
     [TOKEN_PLUS]          = {NULL,     binary, PREC_TERM},
     [TOKEN_SEMICOLON]     = {NULL,     NULL,   PREC_NONE},

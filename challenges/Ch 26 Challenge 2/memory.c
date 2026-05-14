@@ -35,7 +35,8 @@ void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
 
 void markObject(Obj* object) {
     if (object == NULL) return;
-    if (object->isMarked) return;
+    // if (object->isMarked) return;
+    if (object->mark == vm.markValue) return; // If object's mark is same as VM's global mark -> the object is marked
 
 #ifdef DEBUG_LOG_GC
     printf("%p mark ", (void*)object);
@@ -43,7 +44,9 @@ void markObject(Obj* object) {
     printf("\n");
 #endif
 
-    object->isMarked = true;
+    // object->isMarked = true;
+    // Otherwise...
+    object->mark = vm.markValue;
 
 
     if (vm.grayCapacity < vm.grayCount + 1) {
@@ -75,11 +78,6 @@ static void blackenObject(Obj* object) {
 #endif
 
     switch (object->type) {
-    case OBJ_CLASS: {
-            ObjClass* klass = (ObjClass*)object;
-            markObject((Obj*)klass->name);
-            break;
-    }
     case OBJ_CLOSURE: {
             ObjClosure* closure = (ObjClosure*)object;
             markObject((Obj*)closure->function);
@@ -109,10 +107,6 @@ static void freeObject(Obj* object) {
 #endif
 
     switch (object->type) {
-        case OBJ_CLASS: {
-                FREE(ObjClass, object);
-                break;
-        }
         case OBJ_CLOSURE: {
                 ObjClosure* closure = (ObjClosure*)object;
                 FREE_ARRAY(ObjUpvalue*, closure->upvalues,
@@ -125,12 +119,6 @@ static void freeObject(Obj* object) {
                 freeChunk(&function->chunk);
                 FREE(ObjFunction, object);
                 break;
-        }
-        case OBJ_INSTANCE: {
-                    ObjInstance* instance = (ObjInstance*)object;
-                    freeTable(&instance->fields);
-                    FREE(ObjInstance, object);
-                    break;
         }
         case OBJ_NATIVE:
                 FREE(ObjNative, object);
@@ -180,8 +168,9 @@ static void sweep() {
     Obj* previous = NULL;
     Obj* object = vm.objects;
     while (object != NULL) {
-        if (object->isMarked) {
-            object->isMarked = false;
+        // if (object->isMarked) {
+        //     object->isMarked = false;
+        if (object->mark == vm.markValue) { //  No longer need to clear the mark bit on each live object
             previous = object;
             object = object->next;
         } else {
@@ -208,6 +197,8 @@ void collectGarbage() {
     traceReferences();
     tableRemoveWhite(&vm.strings);
     sweep();
+
+    vm.markValue = !vm.markValue; // TOGGLE
 
     vm.nextGC = vm.bytesAllocated * GC_HEAP_GROW_FACTOR;
 

@@ -24,13 +24,20 @@ typedef struct {
     Table strings;
     ObjUpvalue* openUpvalues;
 
-    size_t bytesAllocated;
-    size_t nextGC;
+    // MARK-SWEEP
+    // size_t bytesAllocated;
+    // size_t nextGC;
+    //
+    // Obj* objects;
+    // int grayCount;
+    // int grayCapacity;
+    // Obj** grayStack;
 
-    Obj* objects;
-    int grayCount;
-    int grayCapacity;
-    Obj** grayStack;
+    // CHENEY'S (2 HALVES)
+    void* fromSpace;
+    void* toSpace;
+    void* freePtr;
+    size_t spaceSize;
 } VM;
 
 typedef enum {

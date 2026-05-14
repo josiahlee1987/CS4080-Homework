@@ -317,6 +317,23 @@ static InterpretResult run() {
                     push(value);
                     break;
             }
+            case OP_DELETE_PROPERTY: {
+                        ObjString* name = READ_STRING();
+                        Value receiver = peek(0);
+
+                        if (!IS_INSTANCE(receiver)) {
+                            runtimeError("Only instances have properties to delete.");
+                            return INTERPRET_RUNTIME_ERROR;
+                        }
+
+                        ObjInstance* instance = AS_INSTANCE(receiver);
+                        tableDelete(&instance->fields, name);
+
+                        // Pop instance and push result (often nil or a boolean)
+                        pop();
+                        push(NIL_VAL);
+                        break;
+            }
             case OP_EQUAL: {
                     Value b = pop();
                     Value a = pop();

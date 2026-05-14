@@ -295,14 +295,21 @@ static InterpretResult run() {
                         ObjString* name = READ_STRING();
 
                         Value value;
-                        if (tableGet(&instance->fields, name, &value)) {
-                            pop(); // Instance.
+                        if (tableGet(&instance->fields, name, &value))
+                        {
+                            pop();
                             push(value);
-                            break;
+                        } else { // IF FIELD Does not exist -> return a default value
+                            // Pop instance and push 'nil'
+                            pop();
+                            push(NIL_VAL);
                         }
+                        break;
 
-                    runtimeError("Undefined property '%s'.", name->chars);
-                    return INTERPRET_RUNTIME_ERROR;
+                    // CRASHING
+                    // runtimeError("Undefined property '%s'.", name->chars);
+                    // return INTERPRET_RUNTIME_ERROR;
+
             }
             case OP_SET_PROPERTY: {
                     // If referencing a var (not a field of an instance)

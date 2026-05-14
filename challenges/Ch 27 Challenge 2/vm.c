@@ -317,6 +317,48 @@ static InterpretResult run() {
                     push(value);
                     break;
             }
+            case OP_GET_SUBSCRIPT: {
+                        if (!IS_STRING(peek(0))) {
+                            runtimeError("Field name must be a string.");
+                            return INTERPRET_RUNTIME_ERROR;
+                        }
+                        if (!IS_INSTANCE(peek(1))) {
+                            runtimeError("Only instances have fields.");
+                            return INTERPRET_RUNTIME_ERROR;
+                        }
+
+                        ObjString* name = AS_STRING(pop());
+                        ObjInstance* instance = AS_INSTANCE(pop());
+
+                        Value value;
+                        // Attempt to get the field
+                        if (tableGet(&instance->fields, name, &value)) { // Success -> push the value
+                            push(value);
+                            break;
+                        }
+            }
+            case OP_SET_SUBSCRIPT: {
+                        Value value = pop();
+
+                        if (!IS_STRING(peek(0))) {
+                            runtimeError("Field name must be a string.");
+                            return INTERPRET_RUNTIME_ERROR;
+                        }
+                        ObjString* name = AS_STRING(pop());
+
+                        if (!IS_INSTANCE(peek(0))) {
+                            runtimeError("Only instances have fields.");
+                            return INTERPRET_RUNTIME_ERROR;
+                        }
+                        ObjInstance* instance = AS_INSTANCE(pop());
+
+                        // Set property in hash table
+                        tableSet(&instance->fields, name, value);
+
+                        // Assignment expressions evaluate to the assigned value -> push the value back onto stack
+                        push(value);
+                        break;
+            }
             case OP_EQUAL: {
                     Value b = pop();
                     Value a = pop();

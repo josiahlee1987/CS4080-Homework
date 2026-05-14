@@ -31,6 +31,9 @@ typedef struct {
     int grayCount;
     int grayCapacity;
     Obj** grayStack;
+
+    // GLOBAL TOGGLE
+    bool markValue;
 } VM;
 
 typedef enum {
