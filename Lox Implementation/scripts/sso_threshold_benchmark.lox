@@ -1,0 +1,16 @@
+// Stress test 10000 string additions
+fun bench(base_str, add_str) {
+  var start = clock();
+
+  for (var i = 0; i < 10000; i = i + 1) {
+    var result = base_str + add_str;
+  }
+
+  print clock() - start;
+}
+
+// TEST 1: string length = 7
+// bench("abcdef", "g");
+
+// TEST 2: string length = 8 (threshold)
+bench("abcdefg", "h");
