@@ -71,6 +71,7 @@ typedef struct Compiler {
 
 typedef struct ClassCompiler {
     struct ClassCompiler* enclosing;
+    Token name; // Track name of the current class
     bool hasSuperclass;
 } ClassCompiler;
 
@@ -268,6 +269,30 @@ static uint8_t identifierConstant(Token* name) {
                                            name->length)));
 }
 
+// MANGLED STRING "ClassName_fieldName"
+static uint8_t mangledIdentifierConstant(Token* name) {
+    if (currentClass == NULL) {
+        // Not inside a class; just use the raw name
+        return identifierConstant(name);
+    }
+
+    // Calculate len of "ClassName_fieldName" format
+    int mangledLength = currentClass->name.length + 1 + name->length;
+    char* mangledChars = malloc(mangledLength + 1);
+
+    // Build string
+    memcpy(mangledChars, currentClass->name.start, currentClass->name.length);
+    mangledChars[currentClass->name.length] = '_';
+    memcpy(mangledChars + currentClass->name.length + 1, name->start, name->length);
+    mangledChars[mangledLength] = '\0';
+
+    // Create Lox string object for it
+    ObjString* mangledString = copyString(mangledChars, mangledLength);
+    free(mangledChars);
+
+    return makeConstant(OBJ_VAL(mangledString));
+}
+
 static bool identifiersEqual(Token* a, Token* b) {
     if (a->length != b->length) return false;
     return memcmp(a->start, b->start, a->length) == 0;
@@ -430,7 +455,9 @@ static void call(bool canAssign) {
 
 static void dot(bool canAssign) {
     consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
-    uint8_t name = identifierConstant(&parser.previous);
+
+    // Mangle property name
+    uint8_t name = mangledIdentifierConstant(&parser.previous);
 
     if (canAssign && match(TOKEN_EQUAL)) {
         expression();
@@ -692,6 +719,7 @@ static void classDeclaration() {
     defineVariable(nameConstant);
 
     ClassCompiler classCompiler;
+    classCompiler.name = className; // <- Store class name
     classCompiler.hasSuperclass = false;
     classCompiler.enclosing = currentClass;
     currentClass = &classCompiler;

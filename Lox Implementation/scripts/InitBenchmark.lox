@@ -1,0 +1,22 @@
+class TestObject {
+  init() {
+    // Keep the initializer empty (Measuring lookup time NOT execution time)
+  }
+}
+
+print "Starting benchmark...";
+
+var start = clock();
+
+// Loop: Creating 1000 instances
+for (var i = 0; i < 1000; i = i + 1) {  TestObject();
+  TestObject();
+  TestObject();
+  TestObject();
+  TestObject();
+}
+
+var end = clock();
+
+print "Elapsed time (seconds):";
+print end - start;

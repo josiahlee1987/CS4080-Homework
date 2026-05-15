@@ -8,7 +8,7 @@
 #include "debug.h"
 #include "object.h"
 #include "memory.h"
-#include "vm.h"
+#include "../Temp (original files)/vm.h"
 
 VM vm;
 
@@ -62,6 +62,8 @@ void initVM() {
     vm.grayCount = 0;
     vm.grayCapacity = 0;
     vm.grayStack = NULL;
+
+    vm.nextClassID = 0;
 
     initTable(&vm.globals);
     initTable(&vm.strings);
@@ -181,6 +183,21 @@ static bool invoke(ObjString* name, int argCount) {
     return invokeFromClass(instance->klass, name, argCount);
 }
 
+static bool invokeInner(ObjString* name, int argCount) {
+    Value receiver = peek(argCount);
+    ObjInstance* instance = AS_INSTANCE(receiver);
+
+    Value method;
+    if (!tableGet(&instance->klass->methods, name, &method)) {
+        // No inner method -> discard args and return nil
+        vm.stackTop -= argCount + 1;
+        push(NIL_VAL);
+        return true;
+    }
+
+    return call(AS_CLOSURE(method), argCount);
+}
+
 static bool bindMethod(ObjClass* klass, ObjString* name) {
     Value method;
     if (!tableGet(&klass->methods, name, &method)) {
@@ -232,6 +249,18 @@ static void closeUpvalues(Value* last) {
 static void defineMethod(ObjString* name) {
     Value method = peek(0);
     ObjClass* klass = AS_CLASS(peek(1));
+
+    AS_CLOSURE(method)->classID = klass->id;
+
+    ObjString* originalName = name;
+    Value existing;
+    while (tableGet(&klass->methods, name, &existing)) {
+        ObjClosure* existingClosure = AS_CLOSURE(existing);
+        char newNameChars[256];
+        sprintf(newNameChars, "%s@%x", originalName->chars, existingClosure->classID);
+        name = copyString(newNameChars, (int)strlen(newNameChars));
+    }
+
     tableSet(&klass->methods, name, method);
     pop();
 }
@@ -387,15 +416,15 @@ static InterpretResult run() {
                     push(value);
                     break;
             }
-            case OP_GET_SUPER: {
-                        ObjString* name = READ_STRING();
-                        ObjClass* superclass = AS_CLASS(pop());
-
-                        if (!bindMethod(superclass, name)) {
-                            return INTERPRET_RUNTIME_ERROR;
-                        }
-                        break;
-            }
+            // case OP_GET_SUPER: {
+            //             ObjString* name = READ_STRING();
+            //             ObjClass* superclass = AS_CLASS(pop());
+            //
+            //             if (!bindMethod(superclass, name)) {
+            //                 return INTERPRET_RUNTIME_ERROR;
+            //             }
+            //             break;
+            // }
             case OP_EQUAL: {
                     Value b = pop();
                     Value a = pop();
@@ -468,15 +497,27 @@ static InterpretResult run() {
                         frame = &vm.frames[vm.frameCount - 1];
                         break;
             }
-            case OP_SUPER_INVOKE: {
+            // case OP_SUPER_INVOKE: {
+            //             ObjString* method = READ_STRING();
+            //             int argCount = READ_BYTE();
+            //             ObjClass* superclass = AS_CLASS(pop());
+            //             if (!invokeFromClass(superclass, method, argCount)) {
+            //                 return INTERPRET_RUNTIME_ERROR;
+            //             }
+            //             frame = &vm.frames[vm.frameCount - 1];
+            //             break;
+            // }
+            case OP_INNER: {
                         ObjString* method = READ_STRING();
                         int argCount = READ_BYTE();
                         ObjClass* superclass = AS_CLASS(pop());
                         if (!invokeFromClass(superclass, method, argCount)) {
-                            return INTERPRET_RUNTIME_ERROR;
+                            if (!invokeInner(method, argCount)) {
+                                return INTERPRET_RUNTIME_ERROR;
+                            }
+                            frame = &vm.frames[vm.frameCount - 1];
+                            break;
                         }
-                        frame = &vm.frames[vm.frameCount - 1];
-                        break;
             }
             case OP_CLOSURE: {
                         ObjFunction* function = AS_FUNCTION(READ_CONSTANT());
@@ -514,8 +555,12 @@ static InterpretResult run() {
                     break;
             }
             case OP_CLASS:
-                push(OBJ_VAL(newClass(READ_STRING())));
+                // push(OBJ_VAL(newClass(READ_STRING())));
+                ObjString* name = READ_STRING();
+                uint16_t id = READ_SHORT();
+                push(OBJ_VAL(newClass(name, id)));
                 break;
+
             case OP_INHERIT: {
                     Value superclass = peek(1);
                     if (!IS_CLASS(superclass)) {

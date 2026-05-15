@@ -77,11 +77,14 @@ typedef struct {
     ObjFunction* function;
     ObjUpvalue** upvalues;
     int upvalueCount;
+    // If this closure is a method...
+    uint16_t classID; // <- the ID of the class that declares it
 } ObjClosure;
 
 typedef struct {
     Obj obj;
     ObjString* name;
+    uint16_t id;
     Table methods;
 } ObjClass;
 
@@ -99,7 +102,8 @@ typedef struct {
 
 ObjBoundMethod* newBoundMethod(Value receiver,
                                ObjClosure* method);
-ObjClass* newClass(ObjString* name);
+// ObjClass* newClass(ObjString* name);
+ObjClass* newClass(ObjString* name, uint16_t id);
 ObjClosure* newClosure(ObjFunction* function);
 ObjFunction* newFunction();
 ObjInstance* newInstance(ObjClass* klass);
